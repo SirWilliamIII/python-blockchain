@@ -2,17 +2,10 @@ from functools import reduce
 import hashlib
 import json
 from collections import OrderedDict
+import pickle
 
-MINING_REWARD = 10
-
-genesis_block = {
-    'previous_hash': '',
-    'index': 0,
-    'transactions': [],
-    'proof': 100
-}
-
-blockchain = [genesis_block]
+mining_reward = 10
+blockchain = []
 open_transactions = []
 owner = 'Will'
 participants = {'Will'}
@@ -26,7 +19,48 @@ def load_data():
         global open_transactions
 
         blockchain = json.loads(file_content[0][:-1])
+        updated_blockchain = []
+        for block in blockchain:
+            updated_block = {
+                'previous_hash': block['previous_hash'],
+                'index': block['index'],
+                'proof': block['proof'],
+                'transactions': [
+                    OrderedDict([
+                        ('sender', tx['sender']),
+                        ('recipient', tx['recipient']),
+                        ('amount', tx['amount'])
+                    ]) for tx in block['transactions']]
+            }
+            updated_blockchain.append(updated_block)
+
+        blockchain = updated_blockchain
         open_transactions = json.loads(file_content[1])
+        updated_transactions = []
+        for tx in open_transactions:
+            updated_transaction = OrderedDict([
+                ('sender', tx['sender']),
+                ('recipient', tx['recipient']),
+                ('amount', tx['amount'])
+            ])
+            updated_transactions.append(updated_transaction)
+        open_transactions = updated_transactions
+
+    except IOError:
+        genesis_block = {
+            'previous_hash': '',
+            'index': 0,
+            'transactions': [],
+            'proof': 100
+        }
+        blockchain = [genesis_block]
+        open_transactions = []
+    finally:
+        print('Cleanup, bitch!!')
+
+
+
+load_data()
 
 
 def save_data():
@@ -34,6 +68,8 @@ def save_data():
         f.write(json.dumps(blockchain))
         f.write('\n')
         f.write(json.dumps(open_transactions))
+    except IOError:
+        print('Saving malfunction!!')
 
 
 def hash_string_256(string):
@@ -112,7 +148,7 @@ def mine_block():
     hashed_block = hash_block(last_block)
     proof = proof_of_work()
     reward_transaction = OrderedDict(
-        [('sender', 'MINING'), ('recipient', owner), ('amount', MINING_REWARD)])
+        [('sender', 'MINING'), ('recipient', owner), ('amount', mining_reward)])
 
     copied_transactions = open_transactions[:]
     copied_transactions.append(reward_transaction)
