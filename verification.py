@@ -2,9 +2,6 @@ from hash_helpers import hash_string_256, hash_block
 
 
 class Verification:
-    def __init__(self):
-        pass
-
     def valid_proof(self, transactions, last_hash, proof):
         guess = (str([tx.to_ordered_dict for tx in transactions]) + str(last_hash) + str(proof)).encode()
         guess_hash = hash_string_256(guess)
