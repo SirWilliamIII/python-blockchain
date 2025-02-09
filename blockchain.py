@@ -5,6 +5,7 @@ from hash_helpers import hash_block
 from block import Block
 from transaction import Transaction
 from verification import Verification
+from db_helper import get_db_path
 
 
 MINING_REWARD = 10
@@ -20,7 +21,7 @@ class Blockchain:
 
     def load_data(self):
         try:
-            with open("blockchain.txt", mode="r") as f:
+            with open(get_db_path("blockchain.txt"), mode="r") as f:
                 file_content = f.readlines()
                 blockchain = json.loads(file_content[0][:-1])
                 updated_blockchain = []
@@ -55,7 +56,7 @@ class Blockchain:
 
     def save_data(self):
         try:
-            with open("blockchain.txt", mode="w") as f:
+            with open(get_db_path("blockchain.txt"), mode="w") as f:
                 clone_blockchain = [
                     block.__dict__
                     for block in [
@@ -149,3 +150,13 @@ class Blockchain:
         self.open_transactions = []
         self.save_data()
         return True
+
+    def cleanup_transactions(self):
+        """Remove expired transactions from open_transactions."""
+        current_transactions = self.open_transactions[:]
+        self.open_transactions = [tx for tx in current_transactions if not tx.is_expired()]
+
+    def get_open_transactions(self):
+        """Get open transactions after removing expired ones."""
+        self.cleanup_transactions()
+        return self.open_transactions[:]
