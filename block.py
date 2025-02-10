@@ -24,28 +24,28 @@ class Block(Printable):
     def to_dict(self, include_hash=True):
         """Convert block to dictionary, optionally including its hash."""
         dict_block = {
-            'index': self.index,
-            'previous_hash': self.previous_hash,
-            'transactions': [tx.to_dict() for tx in self.transactions],
-            'proof': self.proof,
-            'timestamp': self.timestamp,
+            "index": self.index,
+            "previous_hash": self.previous_hash,
+            "transactions": [tx.to_dict() for tx in self.transactions],
+            "proof": self.proof,
+            "timestamp": self.timestamp,
         }
         if include_hash:
-            dict_block['hash'] = self.calculate_hash()
+            dict_block["hash"] = self.calculate_hash()
         return dict_block
 
     def get_hash_details(self):
         """Return the details of how the hash is calculated."""
         block_dict = {
-            'index': self.index,
-            'previous_hash': self.previous_hash,
-            'transactions': [tx.__dict__ for tx in self.transactions],
-            'proof': self.proof,
-            'timestamp': self.timestamp
+            "index": self.index,
+            "previous_hash": self.previous_hash,
+            "transactions": [tx.__dict__ for tx in self.transactions],
+            "proof": self.proof,
+            "timestamp": self.timestamp,
         }
         # Convert to sorted JSON string (for consistent ordering)
         block_string = json.dumps(block_dict, sort_keys=True)
         return {
-            'input': block_string,
-            'hash': hashlib.sha256(block_string.encode()).hexdigest()
+            "input": block_string,
+            "hash": hashlib.sha256(block_string.encode()).hexdigest(),
         }

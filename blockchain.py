@@ -83,23 +83,29 @@ class Blockchain:
         proof = 0
         attempts = []  # Track attempts
         v = Verification()
-        
+
         # Track up to 5 failed attempts plus the successful one
         while not v.valid_proof(self.open_transactions, last_hash, proof):
             if len(attempts) < 5:  # Store only first 5 failed attempts
-                attempts.append({
-                    'proof': proof,
-                    'hash': v.get_proof_hash(self.open_transactions, last_hash, proof)
-                })
+                attempts.append(
+                    {
+                        "proof": proof,
+                        "hash": v.get_proof_hash(
+                            self.open_transactions, last_hash, proof
+                        ),
+                    }
+                )
             proof += 1
-        
+
         # Add successful attempt
-        attempts.append({
-            'proof': proof,
-            'hash': v.get_proof_hash(self.open_transactions, last_hash, proof),
-            'valid': True
-        })
-        
+        attempts.append(
+            {
+                "proof": proof,
+                "hash": v.get_proof_hash(self.open_transactions, last_hash, proof),
+                "valid": True,
+            }
+        )
+
         # Store attempts with the block for later retrieval
         self.last_pow_attempts = attempts
         return proof
@@ -128,14 +134,18 @@ class Blockchain:
 
         # Calculate total sent
         amount_sent = reduce(
-            lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0,
+            lambda tx_sum, tx_amt: (
+                tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0
+            ),
             tx_sender,
             0,
         )
 
         # Calculate total received
         amount_received = reduce(
-            lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0,
+            lambda tx_sum, tx_amt: (
+                tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0
+            ),
             tx_recipient,
             0,
         )
@@ -173,7 +183,9 @@ class Blockchain:
     def cleanup_transactions(self):
         """Remove expired transactions from open_transactions."""
         current_transactions = self.open_transactions[:]
-        self.open_transactions = [tx for tx in current_transactions if not tx.is_expired()]
+        self.open_transactions = [
+            tx for tx in current_transactions if not tx.is_expired()
+        ]
 
     def get_open_transactions(self):
         """Get open transactions after removing expired ones."""

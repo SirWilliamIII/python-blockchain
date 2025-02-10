@@ -3,6 +3,7 @@ import hashlib
 
 
 class Verification:
+    # No initialization needed as this class only contains verification methods
     def __init__(self):
         pass
 
@@ -40,6 +41,9 @@ class Verification:
 
     def get_proof_hash(self, transactions, last_hash, proof):
         """Get the hash for a proof attempt without validation."""
-        guess = (str([tx.to_ordered_dict() for tx in transactions]) + 
-                str(last_hash) + str(proof)).encode()
+        guess = (
+            str([tx.to_ordered_dict() for tx in transactions])
+            + str(last_hash)
+            + str(proof)
+        ).encode()
         return hashlib.sha256(guess).hexdigest()
