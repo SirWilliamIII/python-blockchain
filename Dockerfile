@@ -33,4 +33,4 @@ USER appuser
 EXPOSE 5000
 
 # Command to run the application
-CMD ["app", "server.py"] 
+CMD ["python", "server.py"] 
