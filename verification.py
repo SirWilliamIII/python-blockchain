@@ -1,4 +1,5 @@
 from hash_helpers import hash_string_256, hash_block
+import hashlib
 
 
 class Verification:
@@ -36,3 +37,9 @@ class Verification:
         return all(
             [self.verify_transaction(tx, get_balance) for tx in open_transactions]
         )
+
+    def get_proof_hash(self, transactions, last_hash, proof):
+        """Get the hash for a proof attempt without validation."""
+        guess = (str([tx.to_ordered_dict() for tx in transactions]) + 
+                str(last_hash) + str(proof)).encode()
+        return hashlib.sha256(guess).hexdigest()

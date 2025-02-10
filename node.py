@@ -8,8 +8,13 @@ from db_helper import get_db_path
 
 class Node:
     def __init__(self):
-        # Try to load existing node ID, or create a new one
-        self.id = self.load_node_id()
+        # Use username directly as node ID instead of UUID
+        self.id = None  # Will be set when user logs in
+        self.blockchain = None  # Will be initialized when user logs in
+
+    def initialize_blockchain(self, username):
+        """Initialize blockchain with username as node ID"""
+        self.id = username
         self.blockchain = Blockchain(self.id)
 
     def load_node_id(self):

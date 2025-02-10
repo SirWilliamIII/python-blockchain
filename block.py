@@ -33,3 +33,19 @@ class Block(Printable):
         if include_hash:
             dict_block['hash'] = self.calculate_hash()
         return dict_block
+
+    def get_hash_details(self):
+        """Return the details of how the hash is calculated."""
+        block_dict = {
+            'index': self.index,
+            'previous_hash': self.previous_hash,
+            'transactions': [tx.__dict__ for tx in self.transactions],
+            'proof': self.proof,
+            'timestamp': self.timestamp
+        }
+        # Convert to sorted JSON string (for consistent ordering)
+        block_string = json.dumps(block_dict, sort_keys=True)
+        return {
+            'input': block_string,
+            'hash': hashlib.sha256(block_string.encode()).hexdigest()
+        }

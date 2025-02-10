@@ -52,7 +52,7 @@ class Blockchain:
         except (IOError, IndexError):
             print("Handled Exception")
         finally:
-            print("Cleanup, bitch!!")
+            print("Cleanup!!")
 
     def save_data(self):
         try:
@@ -81,47 +81,66 @@ class Blockchain:
         last_block = self.chain[-1]
         last_hash = hash_block(last_block)
         proof = 0
+        attempts = []  # Track attempts
         v = Verification()
+        
+        # Track up to 5 failed attempts plus the successful one
         while not v.valid_proof(self.open_transactions, last_hash, proof):
+            if len(attempts) < 5:  # Store only first 5 failed attempts
+                attempts.append({
+                    'proof': proof,
+                    'hash': v.get_proof_hash(self.open_transactions, last_hash, proof)
+                })
             proof += 1
+        
+        # Add successful attempt
+        attempts.append({
+            'proof': proof,
+            'hash': v.get_proof_hash(self.open_transactions, last_hash, proof),
+            'valid': True
+        })
+        
+        # Store attempts with the block for later retrieval
+        self.last_pow_attempts = attempts
         return proof
 
     def get_balance(self):
+        """Calculate and return the balance for the current hosting node."""
         participant = self.hosting_node_id
 
+        # Get amounts sent by this participant
         tx_sender = [
             [tx.amount for tx in block.transactions if tx.sender == participant]
             for block in self.chain
         ]
 
-        open_tx_sender = [
-            tx.amount for tx in self.open_transactions if tx.sender == participant
-        ]
-
-        tx_sender.append(open_tx_sender)
-        print(tx_sender)
-
-        amount_sent = reduce(
-            lambda tx_sum, tx_amt: (
-                tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0
-            ),
-            tx_sender,
-            0,
-        )
-
+        # Get amounts received by this participant (including mining rewards)
         tx_recipient = [
             [tx.amount for tx in block.transactions if tx.recipient == participant]
             for block in self.chain
         ]
 
+        # Include pending transactions for sent amounts
+        open_tx_sender = [
+            tx.amount for tx in self.open_transactions if tx.sender == participant
+        ]
+        tx_sender.append(open_tx_sender)
+
+        # Calculate total sent
+        amount_sent = reduce(
+            lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0,
+            tx_sender,
+            0,
+        )
+
+        # Calculate total received
         amount_received = reduce(
-            lambda tx_sum, tx_amt: (
-                tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0
-            ),
+            lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum + 0,
             tx_recipient,
             0,
         )
 
+        # Return the difference
         return amount_received - amount_sent
 
     def get_last_blockchain_value(self):
