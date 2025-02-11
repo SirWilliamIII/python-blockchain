@@ -23,7 +23,6 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -126,7 +125,6 @@ ipython_config.py
 .pdm-build/
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
 
 # Celery stuff
 celerybeat-schedule
@@ -181,8 +179,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-node.txt
-blockchain.txt
 .DS_Store
-.python-version
+
 
