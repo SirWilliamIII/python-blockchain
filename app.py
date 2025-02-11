@@ -2,6 +2,9 @@ import os
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from functools import wraps
 from node import Node
+import hashlib
+from verification import Verification
+from block import Block
 
 app = Flask(__name__)
 app.secret_key = os.environ.get(
@@ -83,29 +86,50 @@ def mine():
     return jsonify({"message": "Mining failed."}), 500
 
 
-@app.route("/transactions", methods=["GET", "POST"])
+@app.route("/transactions", methods=["GET"])
 @login_required
-def handle_transactions():
-    node = nodes[session["username"]]
-    if request.method == "POST":
-        values = request.get_json()
-        if not values:
-            return jsonify({"message": "No data found."}), 400
-        required = ["recipient", "amount"]
-        if not all(key in values for key in required):
-            return jsonify({"message": "Required data missing."}), 400
+def get_transactions():
+    node = nodes.get(session["username"])
+    if not node:
+        return jsonify({"error": "Node not found"}), 404
+    
+    # Load latest transactions
+    node.load_transactions()
+    transactions = node.get_transactions()
+    return jsonify(transactions)
 
-        recipient = values["recipient"]
-        amount = values["amount"]
 
-        if node.blockchain.add_transaction(recipient, node.id, amount):
-            response = {"message": "Transaction added successfully."}
-            return jsonify(response), 201
-        return jsonify({"message": "Transaction failed."}), 500
+@app.route("/transactions", methods=["POST"])
+@login_required
+def new_transaction():
+    values = request.get_json()
+    required = ['recipient', 'amount']
+    if not all(k in values for k in required):
+        return jsonify({"error": "Missing values"}), 400
 
-    elif request.method == "GET":
-        transactions = [tx.to_dict() for tx in node.blockchain.get_open_transactions()]
-        return jsonify(transactions), 200
+    node = nodes.get(session["username"])
+    if not node:
+        return jsonify({"error": "Node not found"}), 404
+
+    # Load latest transactions before adding new one
+    node.load_transactions()
+    
+    # Create the new transaction
+    index = node.add_transaction(
+        session["username"],
+        values['recipient'],
+        values['amount']
+    )
+
+    response = {
+        'message': f'Transaction will be added to Block {index}',
+        'transaction': {
+            'sender': session["username"],
+            'recipient': values['recipient'],
+            'amount': values['amount']
+        }
+    }
+    return jsonify(response), 201
 
 
 @app.route("/balance", methods=["GET"])
@@ -145,6 +169,65 @@ def get_pow_attempts(index):
     return jsonify({"message": "Block not found"}), 404
 
 
+@app.route("/block/<int:index>/all-mining-attempts", methods=["GET"])
+@login_required
+def get_all_mining_attempts(index):
+    node = nodes[session["username"]]
+    if index < len(node.blockchain.chain):
+        block = node.blockchain.chain[index]
+        
+        # Get transactions without mining reward
+        transactions = [tx.to_ordered_dict() for tx in block.transactions if tx.sender != "MINING"]
+        
+        # Get the correct previous hash
+        prev_hash = block.previous_hash
+        
+        # Simulate mining attempts
+        attempts = []
+        proof = 0
+        found_valid = False
+        
+        while not found_valid:
+            # Create the hash input string
+            hash_string = (
+                str(transactions) +
+                str(prev_hash) +
+                str(proof)
+            ).encode()
+            
+            # Calculate hash
+            current_hash = hashlib.sha256(hash_string).hexdigest()
+            
+            # Add to attempts
+            attempts.append({
+                "proof": proof,
+                "hash": current_hash,
+                "valid": current_hash.startswith("00")
+            })
+            
+            # Check if this is a valid hash
+            if current_hash.startswith("00"):
+                found_valid = True
+            
+            proof += 1
+            
+            # Safety check to prevent infinite loops
+            if proof > 1000:
+                break
+        
+        return jsonify(attempts), 200
+        
+    return jsonify({"message": "Block not found"}), 404
+
+
+@app.route("/current-user")
+@login_required
+def get_current_user():
+    return jsonify({"username": session["username"]}), 200
+
+
 if __name__ == "__main__":
+    # Get port from environment variable or use 5000 as default
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    # Run the app with debug mode and allow all hosts
+    app.run(host="0.0.0.0", port=port, debug=True)

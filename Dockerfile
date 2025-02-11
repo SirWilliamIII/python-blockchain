@@ -1,36 +1,25 @@
 # Use Python 3.11 slim image as base
-FROM python:3.13.1-slim
+FROM python:3.11-slim
 
 # Set working directory in container
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PORT=5000
-
-# Install system dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements file
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy application code
 COPY . .
 
-# Create a non-root user and switch to it
-RUN useradd -m appuser && chown -R appuser:appuser /app
-USER appuser
-
-# Expose the port the app runs on
+# Expose port 5000
 EXPOSE 5000
 
+# Environment variable for Flask
+ENV FLASK_APP=app.py
+ENV FLASK_ENV=development
+ENV PORT=5000
+
 # Command to run the application
-CMD ["python", "server.py"] 
+CMD ["python", "app.py"] 
